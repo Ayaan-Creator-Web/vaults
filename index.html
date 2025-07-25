@@ -157,16 +157,19 @@
             transition: opacity 0.3s ease;
         }
 
-        .button:hover::before {
+        /* Removed hover effect for .button::before */
+        /* .button:hover::before {
             opacity: 1;
-        }
+        } */
 
-        .button:not(.failed):not(.selected):hover {
+        /* Removed hover effects for .button */
+        /* .button:not(.failed):not(.selected):hover {
             background-color: var(--button-hover);
             transform: translateY(-2px);
             box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
-        }
+        } */
 
+        /* The active state is kept as it's a click feedback, not a hover */
         .button:not(.failed):not(.selected):active {
             transform: translateY(1px);
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
@@ -302,12 +305,14 @@
             margin-top: 20px;
         }
 
-        .lock-button:hover {
+        /* Removed hover effects for .lock-button */
+        /* .lock-button:hover {
             background-color: #ff5722;
             transform: translateY(-2px);
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
-        }
+        } */
 
+        /* The active state is kept as it's a click feedback, not a hover */
         .lock-button:active {
             transform: translateY(1px);
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
