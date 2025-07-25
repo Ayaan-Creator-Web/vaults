@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ayaan's Candy Vault</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Bank Vault Palette */
+            --primary-bg: #2b2b2b; /* Dark charcoal */
+            --secondary-bg: #3c3c3c; /* Slightly lighter charcoal for container background */
+            --accent-color: #e43a19; /* Still a warning/action color */
+            --success-color: #4CAF50; /* Green for success */
+            --fail-color: #f44336; /* Red for failure */
+            --text-color: #e0e0e0; /* Off-white for text */
+            --button-base: #555555; /* Dark grey for default buttons */
+            --button-hover: #6a6a6a; /* Lighter grey on hover */
+            --input-color: #3366cc; /* Blue for selected input */
+            --vault-metal: #4a4a4a; /* Medium grey for vault surface */
+            --vault-shadow: #1c1c1c; /* Deep shadow for vault depth */
+            --vault-border: #8d8d8d; /* Lighter grey for vault edges */
+        }
+
+        body {
+            font-family: 'Share Tech Mono', monospace;
+            background: var(--primary-bg);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, rgba(40, 40, 40, 0.8) 0%, rgba(30, 30, 30, 1) 70%);
+            z-index: -1;
+            animation: pulseBackground 15s infinite alternate;
+        }
+
+        @keyframes pulseBackground {
+            0% { background-size: 150% 150%; }
+            100% { background-size: 100% 100%; }
+        }
+
+        /* Initial game screen elements */
+        .game-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 25px;
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+        }
+
+        .game-screen.hidden {
+            opacity: 0;
+            transform: translateY(-50px);
+            pointer-events: none;
+        }
+
+        /* Vault container styling */
+        .container {
+            background: linear-gradient(145deg, var(--vault-metal) 0%, #3a3a3a 100%);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 
+                inset 0 0 15px rgba(0,0,0,0.7), /* Inner dark shadow */
+                0 15px 30px rgba(0, 0, 0, 0.7), /* Outer deep shadow */
+                0 0 60px rgba(228, 58, 25, 0.2); /* Accent glow (still a bit of red here) */
+            border: 5px outset var(--vault-border); /* Thicker, chiseled border */
+            animation: vaultEntry 1.5s ease-out forwards; /* Entry animation */
+            transform: scale(0.8) translateY(100px); /* Start smaller and lower */
+            opacity: 0; /* Start invisible */
+            position: relative;
+        }
+
+        @keyframes vaultEntry {
+            0% { opacity: 0; transform: scale(0.8) translateY(100px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .container.unlocked {
+            transform: scale(1.02);
+            box-shadow: 
+                inset 0 0 15px rgba(0,0,0,0.7),
+                0 15px 30px rgba(0, 0, 0, 0.7),
+                0 0 80px rgba(76, 175, 80, 0.4); /* Stronger green glow */
+        }
+
+        /* Adds a subtle metallic texture behind the buttons */
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            bottom: 10px;
+            background: repeating-linear-gradient(
+                -45deg,
+                rgba(255,255,255,0.05),
+                rgba(255,255,255,0.05) 2px,
+                transparent 2px,
+                transparent 4px
+            );
+            border-radius: 10px;
+            opacity: 0.2;
+            z-index: 0;
+            pointer-events: none; /* Make sure it doesn't block clicks */
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 70px);
+            gap: 12px;
+            padding: 10px;
+            position: relative; /* For z-index of buttons */
+            z-index: 1; /* Ensure buttons are above pseudo-element */
+        }
+
+        .button {
+            width: 70px;
+            height: 70px;
+            background: var(--button-base);
+            border: none;
+            border-radius: 12px;
+            font-size: 1.8em;
+            color: white;
+            cursor: pointer;
+            transition: background 0.3s ease, transform 0.1s ease-out, box-shadow 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 50%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .button:hover::before {
+            opacity: 1;
+        }
+
+        .button:not(.failed):not(.selected):hover {
+            background-color: var(--button-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        .button:not(.failed):not(.selected):active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .button.selected {
+            background-color: var(--input-color); /* Blue color */
+            animation: clickPulse 0.4s ease-out;
+            box-shadow: 0 0 15px var(--input-color), 0 0 30px var(--input-color);
+            cursor: default;
+        }
+
+        .button.correct-final {
+            background-color: var(--success-color);
+            animation: finalPulse 0.8s ease-out forwards;
+            box-shadow: 0 0 20px var(--success-color), 0 0 40px var(--success-color);
+        }
+
+        .button.incorrect-final {
+            background-color: var(--fail-color);
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+            box-shadow: 0 0 15px var(--fail-color), 0 0 30px var(--fail-color);
+            cursor: not-allowed;
+        }
+
+        @keyframes clickPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes finalPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        #result {
+            font-size: 1.3em;
+            margin-top: 20px;
+            text-align: center;
+            min-height: 40px;
+            animation: fadeIn 1s ease-out;
+            line-height: 1.4;
+            color: var(--text-color);
+            transition: color 0.5s ease;
+        }
+
+        #result.success {
+            color: var(--success-color);
+            text-shadow: 0 0 8px var(--success-color);
+        }
+
+        #result.failure {
+            color: var(--fail-color);
+            text-shadow: 0 0 8px var(--fail-color);
+        }
+
+        /* --- Success screen elements --- */
+        .success-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+            opacity: 0; /* Start fully transparent and off-screen */
+            transform: translate(-50%, -40%) scale(0.9); /* Start slightly compressed for entry */
+            pointer-events: none;
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 80%;
+            max-width: 600px;
+            text-align: center;
+            background-color: rgba(0,0,0,0.4);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        /* Bug Fix: only animate when visible is applied */
+        .success-screen.visible {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+            pointer-events: auto;
+            animation: vaultDoorOpen 1.5s ease-out 0.5s forwards; /* Now correctly triggered */
+        }
+
+        @keyframes vaultDoorOpen {
+            0% { transform: translate(-50%, -50%) scaleX(0.95); } /* Start slightly compressed */
+            50% { transform: translate(-50%, -50%) scaleX(1.05); } /* Overshoot slightly */
+            100% { transform: translate(-50%, -50%) scaleX(1); } /* Settle */
+        }
+
+        .success-message {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 2.2em;
+            color: var(--success-color);
+            text-shadow: 0 0 10px rgba(76, 175, 80, 0.6), 0 0 20px rgba(76, 175, 80, 0.4);
+            letter-spacing: 2px;
+            animation: fadeIn 1s ease-out;
+        }
+
+        .instructions {
+            font-size: 1.4em;
+            color: var(--text-color);
+            line-height: 1.6;
+            /* REMOVED: opacity: 0; and animation: fadeIn on its own */
+            /* The parent .success-screen.visible's opacity and transform will handle its initial visibility */
+            margin-top: 15px;
+        }
+
+        .lock-button {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1.2em;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+            /* REMOVED: opacity: 0; and animation: fadeIn on its own */
+            /* The parent .success-screen.visible's opacity and transform will handle its initial visibility */
+            margin-top: 20px;
+        }
+
+        .lock-button:hover {
+            background-color: #ff5722;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .lock-button:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        /* --- Responsive adjustments --- */
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: repeat(3, 80px);
+                gap: 10px;
+            }
+            .button {
+                width: 80px;
+                height: 80px;
+                font-size: 1.6em;
+            }
+            .container {
+                padding: 20px;
+            }
+            .success-message {
+                font-size: 1.8em;
+            }
+            .instructions {
+                font-size: 1.2em;
+            }
+            .lock-button {
+                font-size: 1em;
+                padding: 12px 25px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .grid {
+                grid-template-columns: repeat(2, 100px);
+                gap: 8px;
+            }
+            .button {
+                width: 100px;
+                height: 100px;
+                font-size: 2em;
+            }
+            .success-message {
+                font-size: 1.5em;
+            }
+            .instructions {
+                font-size: 1em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-screen" id="gameScreen">
+        <div class="container">
+            <div class="grid" id="grid"></div>
+        </div>
+        <div id="result"></div>
+    </div>
+
+    <div class="success-screen" id="successScreen">
+        <div class="success-message">ACCESS GRANTED</div>
+        <div class="instructions">
+            To open the vault:
+            <br>Press the left side,
+            <br>Slide the lid forward,
+            <br>Then lift.
+        </div>
+        <button class="lock-button" id="lockButton">LOCK VAULT</button>
+    </div>
+
+    <script>
+        const correctSequence = [1, 6, 3]; // indexes of correct boxes (0-based)
+        let enteredSequence = []; // To store the user's input sequence
+        let incorrectAttempts = 0; // Track incorrect attempts
+        const MAX_ATTEMPTS = 3; // Maximum allowed incorrect attempts before permanent lockout
+        let buttons = []; // To store references to the created buttons
+
+        const gameScreen = document.getElementById('gameScreen');
+        const grid = document.getElementById('grid');
+        const result = document.getElementById('result');
+        const container = document.querySelector('.container');
+
+        const successScreen = document.getElementById('successScreen');
+        const lockButton = document.getElementById('lockButton');
+
+        // Create 8 buttons for the grid
+        for (let i = 0; i < 8; i++) {
+            const btn = document.createElement('button');
+            btn.className = 'button';
+            btn.addEventListener('click', () => handleButtonClick(btn, i));
+            grid.appendChild(btn);
+            buttons.push(btn);
+        }
+
+        // Add event listener for the lock button
+        lockButton.addEventListener('click', () => {
+            location.reload(); // Refreshes the page
+        });
+
+        function handleButtonClick(clickedButton, index) {
+            // If already locked out or unlocked, ignore clicks
+            if (incorrectAttempts >= MAX_ATTEMPTS || successScreen.classList.contains('visible')) {
+                return;
+            }
+
+            // If the button is already part of the entered sequence, ignore
+            if (clickedButton.classList.contains('selected')) {
+                return;
+            }
+
+            clickedButton.classList.add('selected'); // Mark as selected (blue)
+            enteredSequence.push(index); // Add index to the entered sequence
+
+            // If the entered sequence length matches the correct sequence length, check it
+            if (enteredSequence.length === correctSequence.length) {
+                checkPasscode();
+            }
+        }
+
+        function checkPasscode() {
+            // Disable all buttons temporarily while checking
+            buttons.forEach(b => b.style.pointerEvents = 'none');
+
+            const entered = JSON.stringify(enteredSequence);
+            const correct = JSON.stringify(correctSequence);
+
+            if (entered === correct) {
+                // Correct Passcode!
+                result.innerHTML = ""; // Clear result text
+                result.classList.remove('failure'); // Ensure no old failure styling
+                result.classList.add('success');
+                container.classList.add('unlocked');
+
+                // Animate correct buttons to green
+                correctSequence.forEach((idx, i) => {
+                    setTimeout(() => {
+                        buttons[idx].classList.remove('selected'); // Remove blue
+                        buttons[idx].classList.add('correct-final'); // Add green
+                    }, i * 150); // Stagger the green animation
+                });
+
+                // Transition to success screen after all animations
+                setTimeout(() => {
+                    gameScreen.classList.add('hidden');
+                    setTimeout(() => {
+                        successScreen.classList.add('visible'); // Now this addition triggers the animation
+                    }, 800);
+                }, correctSequence.length * 150 + 500); // Wait for button animations + a little extra
+            } else {
+                // Incorrect Passcode!
+                incorrectAttempts++; // Increment attempt counter
+                result.classList.remove('success'); // Ensure no old success styling
+                result.classList.add('failure');
+
+                // Animate all selected buttons to red and shake
+                enteredSequence.forEach((idx) => {
+                    buttons[idx].classList.remove('selected'); // Remove blue
+                    buttons[idx].classList.add('incorrect-final'); // Add red
+                });
+
+                // If max attempts reached, lock out permanently
+                if (incorrectAttempts >= MAX_ATTEMPTS) {
+                    result.textContent = "❌ VAULT LOCKED PERMANANTLY";
+                    // Buttons remain disabled, no reset. User must refresh.
+                } else {
+                    // Provide generic "Access Denied" for incorrect attempts
+                    result.textContent = "❌ ACCESS DENIED.";
+                    // Reset for next attempt after a delay
+                    setTimeout(() => {
+                        resetPasscodeInput();
+                    }, 1500); // Wait for red animation/shake to finish
+                }
+            }
+        }
+
+        function resetPasscodeInput() {
+            enteredSequence = []; // Clear the entered sequence
+            result.textContent = ""; // Clear the result message
+            result.classList.remove('failure'); // Remove failure styling
+
+            // Reset all buttons to their default state and re-enable them
+            buttons.forEach(btn => {
+                btn.classList.remove('selected', 'correct-final', 'incorrect-final');
+                btn.style.pointerEvents = 'auto';
+            });
+        }
+    </script>
+</body>
+</html>
